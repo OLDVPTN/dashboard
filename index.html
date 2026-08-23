@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard Lowongan Kerja</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #F3F4F6; 
+    --bg-elevated: #FFFFFF; 
+    --card: #FFFFFF;
+    --border: #E5E7EB; 
+    --border-strong: #D1D5DB;
+    --fg: #111827; 
+    --muted: #6B7280; 
+    --accent: #FF6B35;
+    --mint: #059669; 
+    --gold: #D97706;
+    --violet: #7C3AED;
+    --rose: #DC2626;
+  }
+  * { box-sizing: border-box; }
+  body {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    background: var(--bg);
+    color: var(--fg);
+    margin: 0;
+    min-height: 100vh;
+  }
+  .font-display { font-family: 'Bricolage Grotesque', sans-serif; }
+  
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background: 
+      radial-gradient(ellipse 800px 600px at 0% -10%, rgba(255,107,53,0.08), transparent 55%),
+      radial-gradient(ellipse 700px 500px at 100% 0%, rgba(6,214,160,0.05), transparent 50%);
+    pointer-events: none; z-index: 0;
+  }
+  
+  .sidebar {
+    position: fixed;
+    top: 0; left: 0;
+    height: 100vh; width: 280px;
+    background: var(--bg-elevated);
+    border-right: 1px solid var(--border);
+    z-index: 60;
+    padding: 24px 20px;
+    transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+    overflow-y: auto;
+    box-shadow: 4px 0 24px rgba(0,0,0,0.04); 
+  }
+  .sidebar.hidden { transform: translateX(-100%); }
+  
+  .sidebar-overlay {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.4);
+    backdrop-filter: blur(4px);
+    z-index: 50;
+    opacity: 0; pointer-events: none;
+    transition: opacity 0.35s;
+  }
+  .sidebar-overlay.show { opacity: 1; pointer-events: auto; }
+  
+  .nav-item {
+    display: flex; align-items: center; gap: 12px;
+    padding: 12px 14px; border-radius: 10px;
+    color: var(--muted); font-weight: 500; font-size: 14px;
+    cursor: pointer; transition: all 0.2s;
+    margin-bottom: 4px;
+  }
+  .nav-item:hover { background: #F3F4F6; color: var(--fg); }
+  .nav-item.active {
+    background: rgba(255,107,53,0.1);
+    color: var(--accent);
+  }
+  .nav-item i { width: 18px; text-align: center; font-size: 15px; }
+  
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 18px;
+    position: relative;
+    transition: border-color 0.3s, transform 0.3s, box-shadow 0.3s;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+  }
+  .card:hover { 
+    border-color: var(--border-strong); 
+    transform: translateY(-3px);
+    box-shadow: 0 8px 20px rgba(0,0,0,0.08);
+  }
+  
+  .stat-card::before {
+    content: '';
+    position: absolute; top: 0; left: 24px; right: 24px;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--accent-line), transparent);
+  }
+  
+  .btn-primary {
+    background: var(--accent); color: white;
+    padding: 10px 16px; border-radius: 10px;
+    font-weight: 600; font-size: 14px; border: none; cursor: pointer;
+    display: inline-flex; align-items: center; gap: 8px;
+    box-shadow: 0 4px 12px rgba(255,107,53,0.3);
+    transition: all 0.2s;
+  }
+  .btn-primary:hover { background: #FF8555; transform: translateY(-1px); box-shadow: 0 6px 16px rgba(255,107,53,0.4); }
+  
+  .btn-ghost {
+    background: #FFFFFF; border: 1px solid var(--border);
+    color: var(--fg); padding: 10px 16px; border-radius: 10px;
+    font-weight: 600; font-size: 14px; cursor: pointer;
+    display: inline-flex; align-items: center; gap: 8px;
+    transition: all 0.2s;
+  }
+  .btn-ghost:hover { background: #F9FAFB; border-color: var(--border-strong); }
+  
+  .icon-btn {
+    width: 46px; height: 46px; border-radius: 12px;
+    background: #FFFFFF; border: 1px solid var(--border);
+    color: var(--fg); display: flex; align-items: center; justify-content: center;
+    cursor: pointer; transition: all 0.2s;
+    flex-shrink: 0;
+  }
+  .icon-btn:hover { background: #F9FAFB; border-color: var(--border-strong); }
+  
+  .badge {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 4px 10px; border-radius: 999px;
+    font-size: 11px; font-weight: 600;
+  }
+  .badge-dot::before {
+    content: ''; width: 6px; height: 6px; border-radius: 50%; background: currentColor;
+  }
+  
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .fade-up { animation: fadeUp 0.5s cubic-bezier(0.4,0,0.2,1) both; }
+  
+  ::-webkit-scrollbar { width: 5px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: #D1D5DB; border-radius: 3px; }
+  
+  .stat-number {
+    font-family: 'Bricolage Grotesque', sans-serif;
+    font-weight: 800; letter-spacing: -0.04em; line-height: 0.9;
+  }
+  
+  .view { display: none; }
+  .view.active { display: block; }
+  
+  .job-card {
+    padding: 20px; cursor: pointer;
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 16px; transition: all 0.2s;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+  }
+  .job-card:hover {
+    border-color: var(--accent); 
+    background: #FFFBF5; 
+    transform: translateY(-2px);
+    box-shadow: 0 8px 16px rgba(0,0,0,0.06);
+  }
+  .job-card.closed {
+    opacity: 0.7;
+  }
+  .job-card.closed:hover {
+    border-color: var(--border-strong); 
+    background: #F9FAFB; 
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+  }
+  
+  .bar-track {
+    flex: 1; height: 8px; background: #E5E7EB;
+    border-radius: 4px; overflow: hidden;
+  }
+  .bar-fill {
+    height: 100%; border-radius: 4px;
+    transition: width 1.4s cubic-bezier(0.4,0,0.2,1);
+  }
+  
+  .stage-item {
+    display: flex; align-items: center; gap: 16px;
+    padding: 16px; border-radius: 12px; background: #F9FAFB;
+    border: 1px solid var(--border);
+  }
+
+  .logo-img {
+    height: 52px; 
+    width: auto;
+    object-fit: contain;
+    transition: height 0.3s ease;
+  }
+  @media (min-width: 768px) {
+    .logo-img {
+      height: 68px; 
+    }
+  }
+</style>
+</head>
+<body>
+
+<aside id="sidebar" class="sidebar hidden">
+  <div class="flex items-center justify-between mb-10">
+    <div class="flex items-center gap-3">
+      <img src="https://i.imgur.com/OrOecgY.png" alt="Logo" class="logo-img">
+    </div>
+    <button class="icon-btn !w-10 !h-10" onclick="toggleSidebar()"><i class="fa-solid fa-xmark text-base"></i></button>
+  </div>
+  
+  <nav>
+    <div class="text-[11px] font-bold uppercase tracking-wider mb-2 px-3" style="color: var(--muted)">Menu Utama</div>
+    <div class="nav-item active"><i class="fa-solid fa-gauge-high"></i><span>Dashboard</span></div>
+    <div class="nav-item"><i class="fa-solid fa-briefcase"></i><span>Lowongan</span></div>
+    <div class="nav-item"><i class="fa-solid fa-users"></i><span>Pelamar</span></div>
+    <div class="nav-item"><i class="fa-solid fa-calendar-check"></i><span>Interview</span></div>
+    <div class="nav-item"><i class="fa-solid fa-chart-line"></i><span>Laporan</span></div>
+    
+    <div class="text-[11px] font-bold uppercase tracking-wider mb-2 mt-6 px-3" style="color: var(--muted)">Tools</div>
+    <div class="nav-item"><i class="fa-solid fa-clipboard-list"></i><span>Talent Pool</span></div>
+    <div class="nav-item"><i class="fa-solid fa-gear"></i><span>Pengaturan</span></div>
+  </nav>
+  
+  <div class="absolute bottom-5 left-5 right-5 flex items-center gap-3 p-3 rounded-xl border" style="background: #F9FAFB; border-color: var(--border);">
+    <img src="https://i.pravatar.cc/100?img=12" class="w-9 h-9 rounded-full" alt="Avatar">
+    <div class="flex-1 min-w-0">
+      <div class="text-sm font-semibold truncate">Dimas Anggara</div>
+      <div class="text-xs truncate" style="color: var(--muted)">Senior Recruiter</div>
+    </div>
+  </div>
+</aside>
+
+<div id="sidebarOverlay" class="sidebar-overlay" onclick="toggleSidebar()"></div>
+
+<div class="relative z-10 max-w-6xl mx-auto px-5 py-8">
+  
+  <header class="flex items-center justify-between gap-4 mb-10 fade-up">
+    <div class="flex items-center gap-3 sm:gap-4">
+      <button class="icon-btn" onclick="toggleSidebar()">
+        <i class="fa-solid fa-bars text-base"></i>
+      </button>
+      <img src="https://i.imgur.com/OrOecgY.png" alt="Logo" class="logo-img">
+      
+      <div class="hidden md:block ml-2">
+        <h1 class="font-display font-bold text-2xl lg:text-3xl leading-none">Dashboard Recruiter</h1>
+        <p class="text-sm mt-2" style="color: var(--muted)">Kelola statistik lowongan</p>
+      </div>
+    </div>
+    <div class="flex items-center gap-2">
+      <!-- Perbaikan: Menghapus hidden sm:inline-flex dan menyembunyikan teks di layar kecil -->
+      <button class="btn-primary"><i class="fa-solid fa-plus text-xs"></i> <span class="hidden sm:inline">Buat Lowongan</span></button>
+    </div>
+  </header>
+
+  <section id="view-list" class="view active">
+    <div class="mb-6">
+      <h2 class="font-display font-bold text-xl mb-1">Daftar Lowongan</h2>
+      <p class="text-sm" style="color: var(--muted)">Daftar Lowongan Poko Group beserta anak usaha</p>
+    </div>
+    
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4" id="jobGrid"></div>
+  </section>
+
+  <section id="view-detail" class="view">
+    <button class="btn-ghost mb-6" onclick="showPage('list')">
+      <i class="fa-solid fa-arrow-left text-xs"></i> Kembali ke Daftar
+    </button>
+    
+    <div id="detailContent"></div>
+  </section>
+  
+
+</div>
+
+<div id="toastContainer" class="fixed top-5 right-5 z-[100]"></div>
+
+<script>
+// Data Lowongan
+const jobs = [
+  { id: 1, title: 'Admin Sosial Media', dept: 'Poko Group', days: 5, total: 80, hired: 0, review: 45, interview: 18, target: 300, status: 'open' },
+  { id: 2, title: 'Business Development', dept: 'Poko Group', days: 530, total: 26, hired: 1, review: 30, interview: 15, target: 200, status: 'close' },
+  { id: 3, title: 'Customer Service', dept: 'Legalitasmu', days: 730, total: 18, hired: 2, review: 60, interview: 25, target: 400, status: 'close' },
+  { id: 4, title: 'Graphic Designer', dept: 'Poko Group', days: 730, total: 29, hired: 2, review: 60, interview: 25, target: 400, status: 'close' },
+];
+
+// Fungsi Toggle Sidebar
+function toggleSidebar() {
+  const sidebar = document.getElementById('sidebar');
+  const overlay = document.getElementById('sidebarOverlay');
+  sidebar.classList.toggle('hidden');
+  overlay.classList.toggle('show');
+}
+
+// Fungsi Ganti Halaman
+function showPage(pageName, jobId = null) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  
+  if (pageName === 'list') {
+    document.getElementById('view-list').classList.add('active');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  } else if (pageName === 'detail') {
+    const job = jobs.find(j => j.id === jobId);
+    if (job) {
+      renderDetail(job);
+      document.getElementById('view-detail').classList.add('active');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  }
+}
+
+// Fungsi Helper untuk Format Waktu
+function getFormattedTime(days, status, isOpenText = "Dibuka") {
+  if (status === 'open') {
+    return `${isOpenText} ${days} hari lalu`;
+  } else {
+    if (days >= 365) {
+      const years = Math.floor(days / 365);
+      return `Ditutup ${years} tahun lalu`;
+    } else {
+      return `Ditutup ${days} hari lalu`;
+    }
+  }
+}
+
+// Render Daftar Lowongan
+function renderJobList() {
+  document.getElementById('jobGrid').innerHTML = jobs.map(job => {
+    const isOpen = job.status === 'open';
+    const statusBadge = isOpen 
+      ? `<span class="badge badge-dot" style="color: var(--mint); background: rgba(5,150,105,0.1)">Open</span>`
+      : `<span class="badge badge-dot" style="color: var(--rose); background: rgba(220,38,38,0.1)">Closed</span>`;
+    
+    const timeText = isOpen ? `${job.days} hari lalu` : getFormattedTime(job.days, job.status);
+    
+    const hiredDisplay = job.hired > 0 
+      ? `<div class="font-display font-bold text-2xl" style="color: var(--mint)">${job.hired}</div>`
+      : `<span class="inline-flex items-center gap-1.5 px-2.5 py-1 mt-1 rounded-md text-xs font-bold" style="color: var(--gold); background: rgba(217,119,6,0.1);">
+           <i class="fa-solid fa-spinner fa-spin text-[10px]"></i> Dalam Proses
+         </span>`;
+    
+    return `
+    <div class="job-card fade-up ${!isOpen ? 'closed' : ''}" onclick="showPage('detail', ${job.id})">
+      <div class="flex items-start justify-between mb-4">
+        <div>
+          <h3 class="font-display font-bold text-lg mb-1">${job.title}</h3>
+          <div class="flex items-center gap-2 text-xs" style="color: var(--muted)">
+            <i class="fa-solid fa-building text-[9px]"></i> ${job.dept}
+            <span>•</span>
+            <i class="fa-solid fa-clock text-[9px]"></i> ${timeText}
+          </div>
+        </div>
+        ${statusBadge}
+      </div>
+      <div class="flex items-center gap-4">
+        <div class="flex-1">
+          <div class="text-xs mb-1" style="color: var(--muted)">Total Pelamar</div>
+          <div class="font-display font-bold text-2xl" style="color: var(--accent)">${job.total}</div>
+        </div>
+        <div class="w-px h-10" style="background: var(--border)"></div>
+        <div class="flex-1">
+          <div class="text-xs mb-1" style="color: var(--muted)">Diterima</div>
+          ${hiredDisplay}
+        </div>
+        <div class="w-10 h-10 rounded-xl flex items-center justify-center border" style="background: #FFFFFF; border-color: var(--border)">
+          <i class="fa-solid fa-arrow-right text-xs" style="color: var(--muted)"></i>
+        </div>
+      </div>
+    </div>
+  `}).join('');
+}
+
+// Render Detail Lowongan
+function renderDetail(job) {
+  const isHiredZero = job.hired === 0;
+  const convRate = isHiredZero ? 0 : ((job.hired / job.total) * 100).toFixed(1);
+  const targetRate = Math.min(100, Math.round((job.total / job.target) * 100));
+  const isOpen = job.status === 'open';
+  
+  const statusBadge = isOpen 
+    ? `<span class="badge badge-dot" style="color: var(--mint); background: rgba(5,150,105,0.1)">Open</span>`
+    : `<span class="badge badge-dot" style="color: var(--rose); background: rgba(220,38,38,0.1)">Closed</span>`;
+    
+  const timeText = getFormattedTime(job.days, job.status);
+  
+  const acceptedCard = isHiredZero 
+    ? `
+      <div class="text-sm mb-1" style="color: var(--muted)">Pelamar Diterima</div>
+      <div class="inline-flex items-center gap-2 px-4 py-2 rounded-xl mt-2 mb-4" style="background: rgba(217,119,6,0.1); color: var(--gold);">
+        <i class="fa-solid fa-spinner fa-spin text-lg"></i>
+        <span class="font-display font-bold text-xl">Dalam Proses</span>
+      </div>
+      <div class="flex justify-between text-xs mb-1.5">
+        <span style="color: var(--muted)">Menunggu hasil seleksi</span>
+        <span class="font-semibold">${job.total} pelamar</span>
+      </div>
+      <div class="bar-track">
+        <div class="bar-fill" style="width: 0%; background: var(--gold);" data-width="0"></div>
+      </div>
+    `
+    : `
+      <div class="text-sm mb-1" style="color: var(--muted)">Pelamar Diterima</div>
+      <div class="stat-number text-5xl mb-4" data-target="${job.hired}" style="color: var(--mint)">0</div>
+      <div class="flex justify-between text-xs mb-1.5">
+        <span style="color: var(--muted)">Dari total pelamar</span>
+        <span class="font-semibold">${job.total} orang</span>
+      </div>
+      <div class="bar-track">
+        <div class="bar-fill" style="width: 0%; background: var(--mint);" data-width="${(job.hired/job.total)*100}"></div>
+      </div>
+    `;
+  
+  document.getElementById('detailContent').innerHTML = `
+    <div class="fade-up">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+        <div>
+          <div class="flex items-center gap-2 text-xs mb-2" style="color: var(--muted)">
+            <span>Lowongan</span>
+            <i class="fa-solid fa-chevron-right text-[9px]"></i>
+            <span style="color: var(--fg)" class="font-medium">${job.dept}</span>
+            <i class="fa-solid fa-chevron-right text-[9px]"></i>
+            <span style="color: var(--accent)" class="font-medium">${job.title}</span>
+          </div>
+          <h2 class="font-display font-bold text-3xl">${job.title}</h2>
+          <div class="flex items-center gap-3 mt-2 text-xs" style="color: var(--muted)">
+            ${statusBadge}
+            <span><i class="fa-solid fa-building mr-1"></i>${job.dept}</span>
+            <span><i class="fa-solid fa-clock mr-1"></i>${timeText}</span>
+          </div>
+        </div>
+        <div class="flex gap-2">
+          <button class="icon-btn"><i class="fa-solid fa-pen text-sm"></i></button>
+          <button class="icon-btn"><i class="fa-solid fa-share-nodes text-sm"></i></button>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-5 mb-6">
+        <div class="card stat-card p-6" style="--accent-line: var(--accent)">
+          <div class="flex items-start justify-between mb-5">
+            <div class="w-12 h-12 rounded-xl flex items-center justify-center" style="background: rgba(255,107,53,0.1)">
+              <i class="fa-solid fa-users text-lg" style="color: var(--accent)"></i>
+            </div>
+          </div>
+          <div class="text-sm mb-1" style="color: var(--muted)">Total Pelamar</div>
+          <div class="stat-number text-5xl mb-4" data-target="${job.total}" style="color: var(--accent)">0</div>
+        </div>
+
+        <div class="card stat-card p-6" style="--accent-line: ${isHiredZero ? 'var(--gold)' : 'var(--mint)'}">
+          <div class="flex items-start justify-between mb-5">
+            <div class="w-12 h-12 rounded-xl flex items-center justify-center" style="background: ${isHiredZero ? 'rgba(217,119,6,0.1)' : 'rgba(5,150,105,0.1)'}">
+              <i class="fa-solid ${isHiredZero ? 'fa-hourglass-half' : 'fa-circle-check'} text-lg" style="color: ${isHiredZero ? 'var(--gold)' : 'var(--mint)'}"></i>
+            </div>
+            ${isHiredZero ? 
+              `<span class="badge" style="color: var(--gold); background: rgba(217,119,6,0.1)">Menunggu</span>` : 
+              `<span class="badge" style="color: var(--mint); background: rgba(5,150,105,0.1)">${convRate}% Konversi</span>`
+            }
+          </div>
+          ${acceptedCard}
+        </div>
+      </div>
+
+      <div class="card p-6">
+        <h3 class="font-display font-bold text-lg mb-5">Tahapan Seleksi Pelamar</h3>
+        <div class="space-y-3">
+          <div class="stage-item">
+            <div class="flex items-center gap-3 w-44 shrink-0">
+              <div class="w-9 h-9 rounded-lg flex items-center justify-center" style="background: rgba(217,119,6,0.1)">
+                <i class="fa-solid fa-file-lines text-sm" style="color: var(--gold)"></i>
+              </div>
+              <span class="text-sm font-medium">Tahap Review</span>
+            </div>
+            <div class="bar-track flex-1">
+              <div class="bar-fill" style="width: 0%; background: var(--gold);" data-width="${(job.review/job.total)*100}"></div>
+            </div>
+            <span class="text-sm font-bold w-12 text-right">${job.review}</span>
+          </div>
+          
+          <div class="stage-item">
+            <div class="flex items-center gap-3 w-44 shrink-0">
+              <div class="w-9 h-9 rounded-lg flex items-center justify-center" style="background: rgba(255,107,53,0.1)">
+                <i class="fa-solid fa-video text-sm" style="color: var(--accent)"></i>
+              </div>
+              <span class="text-sm font-medium">Tahap Interview</span>
+            </div>
+            <div class="bar-track flex-1">
+              <div class="bar-fill" style="width: 0%; background: var(--accent);" data-width="${(job.interview/job.total)*100}"></div>
+            </div>
+            <span class="text-sm font-bold w-12 text-right">${job.interview}</span>
+          </div>
+
+          <div class="stage-item">
+            <div class="flex items-center gap-3 w-44 shrink-0">
+              <div class="w-9 h-9 rounded-lg flex items-center justify-center" style="background: rgba(5,150,105,0.1)">
+                <i class="fa-solid fa-handshake text-sm" style="color: var(--mint)"></i>
+              </div>
+              <span class="text-sm font-medium">Diterima</span>
+            </div>
+            <div class="bar-track flex-1">
+              <div class="bar-fill" style="width: 0%; background: var(--mint);" data-width="${(job.hired/job.total)*100}"></div>
+            </div>
+            <span class="text-sm font-bold w-12 text-right">${job.hired}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+  
+  // Animasi angka dan bar
+  setTimeout(() => {
+    animateCounters();
+    document.querySelectorAll('#detailContent .bar-fill').forEach(el => {
+      el.style.width = el.dataset.width + '%';
+    });
+  }, 100);
+}
+
+function animateCounters() {
+  document.querySelectorAll('[data-target]').forEach(el => {
+    const target = +el.dataset.target;
+    const duration = 1500;
+    const start = performance.now();
+    function update(now) {
+      const progress = Math.min((now - start) / duration, 1);
+      const eased = 1 - Math.pow(1 - progress, 3);
+      el.textContent = Math.floor(eased * target).toLocaleString('id-ID');
+      if (progress < 1) requestAnimationFrame(update);
+      else el.textContent = target.toLocaleString('id-ID');
+    }
+    requestAnimationFrame(update);
+  });
+}
+
+// Init: Render daftar lowongan saat halaman pertama kali dimuat
+renderJobList();
+</script>
+</body>
+</html>
